@@ -5,6 +5,15 @@ function getPrototype(value) {
   return Object.prototype.toString.call(value).replace(/^\[object (\S+)\]$/, '$1').toLowerCase()
 }
 
+function addImageToCell({mediaImage, tdElement}) {
+  const img = document.createElement('img');
+  const { buffer, extension } = mediaImage;
+  img.src = `data:image/${extension};base64,${buffer.toString('base64')}`
+  img.style.maxHeight = '100%';
+  img.style.maxWidth = '100%';
+  tdElement.appendChild(img);
+}
+
 async function renderXlsx({
   arrayBuffer: xlsxData,
   node: xlsxElement,
@@ -69,6 +78,8 @@ async function renderXlsx({
               rows: [],
               merges: [],
               worksheet,
+              workbook,
+              images: worksheet.getImages(),
               rendered: false
             }
             // set sheet column
@@ -246,6 +257,15 @@ async function renderXlsx({
               tdElement.style.fontStyle = italic ? 'italic' : 'normal'
               tdElement.style.textDecoration = underline ? 'underline' : 'none'
             }
+
+            // Add images
+            sheetItem.images
+              .filter(image => image.range.tl.nativeCol + 1 === cell.col && image.range.tl.nativeRow + 1 === cell.row)
+              .forEach(image => {
+                const mediaImage = sheetItem.workbook.model.media.find(m => m.index === image.imageId)
+                addImageToCell({ mediaImage, tdElement });
+              })
+            
             // set cell value
             if (getPrototype(cell.value) === 'object') {
               const { richText, hyperlink } = cell.value
@@ -277,7 +297,9 @@ async function renderXlsx({
             } else if (getPrototype(cell.value) === 'date') {
               tdElement.innerText = Dayjs(cell.value).format('YYYY-MM-DD HH:mm:ss')
             } else {
-              tdElement.innerText = cell.value
+              const span = document.createElement('span')
+              span.innerText = cell.value
+              tdElement.appendChild(span)
             }
             trElement.appendChild(tdElement)
           }
