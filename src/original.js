@@ -280,8 +280,14 @@ async function renderXlsx({
               })
             
             // set cell value
+            const content = document.createElement('span')
+            if (cell.style.alignment.textRotation) {
+              content.style.display = 'block';
+              content.style.transform = `rotate(${-cell.style.alignment.textRotation}deg)`
+            }
+
             if (getPrototype(cell.value) === 'object') {
-              const { richText, hyperlink } = cell.value
+              const { richText, hyperlink } = cell.value;
               if (richText && getPrototype(richText) === 'array') {
                 for (const span of richText) {
                   const spanElement = document.createElement('span')
@@ -295,7 +301,7 @@ async function renderXlsx({
                     spanElement.style.textDecoration = underline ? 'underline' : 'none'
                   }
                   spanElement.innerText = span.text
-                  tdElement.appendChild(spanElement)
+                  content.appendChild(spanElement)
                 }
               } else if (getPrototype(hyperlink) === 'string') {
                 const link = cell.value
@@ -305,16 +311,15 @@ async function renderXlsx({
                 linkElement.style.color = '#2f63c1'
                 linkElement.style.textDecoration = 'underline'
                 linkElement.innerText = link.text
-                tdElement.appendChild(linkElement)
+                content.appendChild(linkElement)
               }
             } else if (getPrototype(cell.value) === 'date') {
-              tdElement.innerText = Dayjs(cell.value).format('YYYY-MM-DD HH:mm:ss')
+              content.innerText = Dayjs(cell.value).format('YYYY-MM-DD HH:mm:ss')
             } else {
-              const span = document.createElement('span')
-              span.innerText = parseCellValue(cell.value)
-              span.title = cell.value;
-              tdElement.appendChild(span)
+              content.innerText = parseCellValue(cell.value)
+              content.title = cell.value;
             }
+            tdElement.appendChild(content)
             trElement.appendChild(tdElement)
           }
           tbodyTrElementArr.push(trElement)
