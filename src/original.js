@@ -8,7 +8,7 @@ function getPrototype(value) {
 async function renderXlsx(
   xlsxData,
   xlsxElement,
-  xlsxOptions
+  xlsxOptions = {}
 ) {
   const {
     initialSheetIndex = 0,
@@ -365,4 +365,4 @@ async function renderXlsx(
   viewerMethods.createTableContainerElement()
 }
 
-export default { renderXlsx }
+export { renderXlsx }

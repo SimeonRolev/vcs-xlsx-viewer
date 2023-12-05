@@ -6,9 +6,10 @@ function App() {
   const [arrayBuffer, setArrayBuffer] = useState(null)
 
   React.useEffect(() => {
-    fetch('public/Door Schedule w_ Images.xlsx')
+    fetch('Door Schedule w_ Images.xlsx')
       .then(result => result.blob())
-      .then(blob => setArrayBuffer(blob.arrayBuffer()))
+      .then(blob => blob.arrayBuffer())
+      .then(ab => setArrayBuffer(ab))
   }, [])
 
   return (

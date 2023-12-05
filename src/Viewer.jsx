@@ -71,7 +71,7 @@ function Viewer({ arrayBuffer }) {
   const ref = useRef();
 
   React.useEffect(() => {
-    renderXlsx(
+    arrayBuffer && renderXlsx(
       arrayBuffer,
       ref.current
     )
