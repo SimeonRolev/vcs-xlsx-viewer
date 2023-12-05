@@ -5,11 +5,17 @@ function getPrototype(value) {
   return Object.prototype.toString.call(value).replace(/^\[object (\S+)\]$/, '$1').toLowerCase()
 }
 
-function isNumeric(str) {
-  if (typeof str === 'number') return true;
-  if (typeof str != "string") return false // we only process strings!  
-  return !isNaN(str) && // use type coercion to parse the _entirety_ of the string (`parseFloat` alone does not do this)...
-         !isNaN(parseFloat(str)) // ...and ensure strings of whitespace fail
+function isNumeric(input) {
+  if (typeof input === 'number') return true;
+  if (typeof input != "string") return false // we only process strings!  
+  return !isNaN(input) && // use type coercion to parse the _entirety_ of the string (`parseFloat` alone does not do this)...
+         !isNaN(parseFloat(input)) // ...and ensure strings of whitespace fail
+}
+
+function parseCellValue (value) {
+  return isNumeric(value)
+      ? parseFloat(parseFloat(value).toFixed(2))
+      : value
 }
 
 function addImageToCell({mediaImage, tdElement}) {
@@ -305,7 +311,8 @@ async function renderXlsx({
               tdElement.innerText = Dayjs(cell.value).format('YYYY-MM-DD HH:mm:ss')
             } else {
               const span = document.createElement('span')
-              span.innerText = isNumeric(cell.value) ? parseFloat(cell.value).toFixed(2) : cell.value
+              span.innerText = parseCellValue(cell.value)
+              span.title = cell.value;
               tdElement.appendChild(span)
             }
             trElement.appendChild(tdElement)
