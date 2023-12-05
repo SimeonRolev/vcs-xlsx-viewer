@@ -5,11 +5,11 @@ function getPrototype(value) {
   return Object.prototype.toString.call(value).replace(/^\[object (\S+)\]$/, '$1').toLowerCase()
 }
 
-async function renderXlsx(
-  xlsxData,
-  xlsxElement,
-  xlsxOptions = {}
-) {
+async function renderXlsx({
+  arrayBuffer: xlsxData,
+  node: xlsxElement,
+  options: xlsxOptions = {}
+}) {
   const {
     initialSheetIndex = 0,
     frameRenderSize = 500,
@@ -52,7 +52,6 @@ async function renderXlsx(
     xlsxElement: undefined,
     containerElement: undefined,
     tipElement: undefined,
-    sheetElement: undefined,
     tableElement: undefined
   }
   // viewer methods init
@@ -62,44 +61,43 @@ async function renderXlsx(
         try {
           // load workbook
           (new ExcelJS.Workbook().xlsx.load((viewerParams.arrayBuffer))).then((workbook) => {
-            workbook.eachSheet((worksheet, sheetId) => {
-              const sheetItem = {
-                id: sheetId,
-                name: worksheet.name,
-                columns: [],
-                rows: [],
-                merges: [],
-                worksheet,
-                rendered: false
-              }
-              // set sheet column
-              for (let i = 0; i < worksheet.columnCount; i++) {
-                const column = worksheet.getColumn(i + 1)
-                sheetItem.columns.push(column)
-              }
-              // set sheet row
-              for (let i = 0; i < worksheet.rowCount; i++) {
-                const row = worksheet.getRow(i + 1)
-                // set sheet row cell merges
-                for (let j = 0; j < row.cellCount; j++) {
-                  const cell = row.getCell(j + 1)
-                  if (cell.isMerged) {
-                    const targetAddress = sheetItem.merges.find((item) => item.address === cell.master._address)
-                    if (targetAddress) {
-                      targetAddress.cells.push(cell)
-                    } else {
-                      sheetItem.merges.push({
-                        address: cell._address,
-                        master: cell,
-                        cells: [cell]
-                      })
-                    }
+            const worksheet = workbook.getWorksheet(initialSheetIndex + 1)
+            const sheetItem = {
+              id: xlsxOptions.initialSheetIndex,
+              name: worksheet.name,
+              columns: [],
+              rows: [],
+              merges: [],
+              worksheet,
+              rendered: false
+            }
+            // set sheet column
+            for (let i = 0; i < worksheet.columnCount; i++) {
+              const column = worksheet.getColumn(i + 1)
+              sheetItem.columns.push(column)
+            }
+            // set sheet row
+            for (let i = 0; i < worksheet.rowCount; i++) {
+              const row = worksheet.getRow(i + 1)
+              // set sheet row cell merges
+              for (let j = 0; j < row.cellCount; j++) {
+                const cell = row.getCell(j + 1)
+                if (cell.isMerged) {
+                  const targetAddress = sheetItem.merges.find((item) => item.address === cell.master._address)
+                  if (targetAddress) {
+                    targetAddress.cells.push(cell)
+                  } else {
+                    sheetItem.merges.push({
+                      address: cell._address,
+                      master: cell,
+                      cells: [cell]
+                    })
                   }
                 }
-                sheetItem.rows.push(row)
               }
-              viewerParams.sheetList.push(sheetItem)
-            })
+              sheetItem.rows.push(row)
+            }
+            viewerParams.sheetList.push(sheetItem)
             if (viewerElements.tipElement && getPrototype(viewerElements.tipElement).indexOf('element') !== -1) {
               viewerElements.tipElement.style.display = 'none'
               onLoad(viewerParams.sheetList)
@@ -116,21 +114,17 @@ async function renderXlsx(
     },
     createXlsxContainerElement() {
       const xlsxViewerContainerElement = document.createElement('div')
-      const xlsxViewerSheetElement = document.createElement('div')
       const xlsxViewerTableElement = document.createElement('div')
       const xlsxViewerTipElement = document.createElement('div')
       const oldXlsxViewerContainerElement = xlsxElement.querySelector('.xlsx-viewer-container')
       xlsxViewerContainerElement.classList.add('xlsx-viewer-container')
-      xlsxViewerSheetElement.classList.add('xlsx-viewer-sheet')
       xlsxViewerTableElement.classList.add('xlsx-viewer-table')
       xlsxViewerTipElement.classList.add('xlsx-viewer-tip')
       xlsxViewerTipElement.innerText = 'Loading...'
       viewerElements.xlsxElement = xlsxElement
-      viewerElements.sheetElement = xlsxViewerSheetElement
       viewerElements.tableElement = xlsxViewerTableElement
       viewerElements.tipElement = xlsxViewerTipElement
       viewerElements.containerElement = xlsxViewerContainerElement
-      viewerElements.containerElement.appendChild(xlsxViewerSheetElement)
       viewerElements.containerElement.appendChild(xlsxViewerTableElement)
       viewerElements.containerElement.appendChild(xlsxViewerTipElement)
       if (oldXlsxViewerContainerElement) {
@@ -141,32 +135,10 @@ async function renderXlsx(
     },
     createTableContainerElement() {
       for (let i = 0; i < viewerParams.sheetList.length; i++) {
-        const sheetItem = viewerParams.sheetList[i]
-        const xlsxViewerSheetItemElement = document.createElement('div')
+        const sheetItem = viewerParams.sheetList[initialSheetIndex]
         const xlsxViewerTableItemElement = document.createElement('div')
-        xlsxViewerSheetItemElement.innerText = sheetItem.name
-        xlsxViewerSheetItemElement.classList.add('xlsx-viewer-sheet-content')
         xlsxViewerTableItemElement.classList.add('xlsx-viewer-table-content')
-        xlsxViewerSheetItemElement.addEventListener('click', () => {
-          viewerElements.sheetElement?.querySelector('.xlsx-viewer-sheet-content.active')?.classList.remove('active')
-          viewerElements.tableElement?.querySelector('.xlsx-viewer-table-content.active')?.classList.remove('active')
-          xlsxViewerSheetItemElement.classList.add('active')
-          xlsxViewerTableItemElement.classList.add('active')
-          if (!sheetItem.rendered) {
-            viewerMethods.createTableContentElement(sheetItem, xlsxViewerTableItemElement)
-          }
-          if (sheetItem.id !== viewerParams.currentSheetId) {
-            viewerParams.currentSheetId = sheetItem.id
-            onSwitch(sheetItem)
-          }
-        })
-        if (i === (initialSheetIndex >= 0 && initialSheetIndex < viewerParams.sheetList.length ? initialSheetIndex : 0)) {
-          viewerParams.currentSheetId = sheetItem.id
-          xlsxViewerSheetItemElement.classList.add('active')
-          xlsxViewerTableItemElement.classList.add('active')
-          viewerMethods.createTableContentElement(sheetItem, xlsxViewerTableItemElement)
-        }
-        viewerElements.sheetElement?.appendChild(xlsxViewerSheetItemElement)
+        viewerMethods.createTableContentElement(sheetItem, xlsxViewerTableItemElement)
         viewerElements.tableElement?.appendChild(xlsxViewerTableItemElement)
       }
     },

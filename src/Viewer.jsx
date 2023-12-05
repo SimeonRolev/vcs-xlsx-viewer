@@ -13,26 +13,10 @@ const S = {
           align-items: center;
           min-height: 50px;
         }
-        .xlsx-viewer-sheet {
-          display: flex;
-          flex-wrap: wrap;
-          margin-bottom: 1rem;
-          .xlsx-viewer-sheet-content {
-            background-color: #f0f0f0;
-            border: 1px solid #ccc;
-            padding: .25rem .5rem;
-            margin-right: -1px;
-            cursor: pointer;
-            &.active {
-              background-color: #fff;
-            }
-          }
-        }
         .xlsx-viewer-table {
           .xlsx-viewer-table-content {
             width: 100%;
             overflow-x: auto;
-            display: none;
             table {
               border-collapse: collapse;
               border-spacing: 0;
@@ -57,9 +41,6 @@ const S = {
                 }
               }
             }
-            &.active {
-              display: block;
-            }
           }
         }
       }
@@ -71,10 +52,13 @@ function Viewer({ arrayBuffer }) {
   const ref = useRef();
 
   React.useEffect(() => {
-    arrayBuffer && renderXlsx(
+    arrayBuffer && renderXlsx({
       arrayBuffer,
-      ref.current
-    )
+      node: ref.current,
+      options: {
+        initialSheetIndex: 0
+      }
+    })
   }, [arrayBuffer])
 
   return (
