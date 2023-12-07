@@ -32,7 +32,6 @@ const S = {
                 background-color: #fff;
                 tr td {
                   border: 1px solid #ccc;
-                  padding: 5px;
                   text-align: left;
                   vertical-align: middle;
                   &:first-of-type {
